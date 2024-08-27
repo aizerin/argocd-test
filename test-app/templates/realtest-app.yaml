@@ -1,15 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: test-app
+  name: realtest-app
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
     repoURL: https://github.com/aizerin/argocd-test.git
-    path: test-app
+    path: realtest-app
     targetRevision: HEAD
+    plugin:
+      name: test-plugin-v1.0
+    helm:
+      valueFiles:
+        - values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: default

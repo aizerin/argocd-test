@@ -5,6 +5,32 @@ argo-cd:
     enabled: false
   applicationSet:
     enabled: false
+  repoServer:
+    extraContainers:
+      - name: test-plugin
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
+        image: busybox
+        command: [/var/run/argocd/argocd-cmp-server]
+        volumeMounts:
+          - mountPath: /var/run/argocd
+            name: var-files
+          - mountPath: /home/argocd/cmp-server/plugins
+            name: plugins
+          - mountPath: /home/argocd/cmp-server/config/plugin.yaml
+            subPath: plugin.yaml
+            name: test-plugin
+          - mountPath: /home/argocd/test-plugin
+            name: test-plugin
+          - mountPath: /tmp
+            name: cmp-tmp
+    volumes:
+      - name: test-plugin
+        configMap:
+          name: test-plugin
+      - emptyDir: {}
+        name: cmp-tmp
   server:
     extraArgs:
       - --insecure
@@ -12,3 +38,10 @@ argo-cd:
     params:
       server:
         insecure: true
+
+      # {{- with .Values.server.extraContainers }}
+      #   {{- toYaml . | nindent 6 }}
+      # {{- end }}
+#       {{- if .Values.server.volumes }}
+# {{- toYaml .Values.server.volumes | nindent 6}}
+#       {{- end }}

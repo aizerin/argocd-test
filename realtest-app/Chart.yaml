@@ -1,0 +1,7 @@
+apiVersion: v2
+name: realtest-app
+version: 1.0.0
+dependencies:
+  - name: nginx
+    version: 18.1.11
+    repository: https://charts.bitnami.com/bitnami
