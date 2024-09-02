@@ -6,31 +6,36 @@ argo-cd:
   applicationSet:
     enabled: false
   repoServer:
-    extraContainers:
-      - name: test-plugin
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 999
-        image: busybox
-        command: [/var/run/argocd/argocd-cmp-server]
-        volumeMounts:
-          - mountPath: /var/run/argocd
-            name: var-files
-          - mountPath: /home/argocd/cmp-server/plugins
-            name: plugins
-          - mountPath: /home/argocd/cmp-server/config/plugin.yaml
-            subPath: plugin.yaml
-            name: test-plugin
-          - mountPath: /home/argocd/test-plugin
-            name: test-plugin
-          - mountPath: /tmp
-            name: cmp-tmp
+    volumeMounts:
+      - mountPath: /usr/local/bin/helm
+        name: helm-tools
+        subPath: helm
+      - mountPath: /usr/local/bin/helm-original
+        name: helm-tools
+        subPath: helm-original
     volumes:
-      - name: test-plugin
+      - name: helm-tools
+        emptyDir: {}
+      - name: helm-wrapper
         configMap:
-          name: test-plugin
-      - emptyDir: {}
-        name: cmp-tmp
+          name: helm-wrapper
+    initContainers:
+      - name: wrap-helm
+        image: alpine
+        command: [sh, -c]
+        args:
+          - >-
+            set -x;
+            cd /helm-tools &&
+            wget -qO- https://get.helm.sh/helm-v3.15.4-linux-amd64.tar.gz | tar -xvzf - &&
+            mv linux-amd64/helm /helm-tools/helm-original &&
+            cp /helm/helm /helm-tools/helm &&
+            chmod +x /helm-tools/helm
+        volumeMounts:
+          - name: helm-wrapper
+            mountPath: /helm
+          - name: helm-tools
+            mountPath: /helm-tools
   server:
     extraArgs:
       - --insecure
@@ -38,10 +43,3 @@ argo-cd:
     params:
       server:
         insecure: true
-
-      # {{- with .Values.server.extraContainers }}
-      #   {{- toYaml . | nindent 6 }}
-      # {{- end }}
-#       {{- if .Values.server.volumes }}
-# {{- toYaml .Values.server.volumes | nindent 6}}
-#       {{- end }}
